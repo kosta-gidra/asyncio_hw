@@ -31,29 +31,10 @@ async def get_person(people_id: int, session: ClientSession):
         starships = []
         vehicles = []
         if status == 200:
-            cor_vehicles = []
-            for vehicles_link in json_data["vehicles"]:
-                json_vehicles = get_json_from_link(vehicles_link, session, name="name")
-                cor_vehicles.append(json_vehicles)
-            vehicles = await asyncio.gather(*cor_vehicles)
-
-            cor_starships = []
-            for starships_link in json_data["starships"]:
-                json_starships = get_json_from_link(starships_link, session, name="name")
-                cor_starships.append(json_starships)
-            starships = await asyncio.gather(*cor_starships)
-
-            cor_species = []
-            for species_link in json_data["species"]:
-                json_species = get_json_from_link(species_link, session, name="name")
-                cor_species.append(json_species)
-            species = await asyncio.gather(*cor_species)
-
-            cor_films = []
-            for films_link in json_data["films"]:
-                json_films = get_json_from_link(films_link, session, name="title")
-                cor_films.append(json_films)
-            films = await asyncio.gather(*cor_films)
+            films = await get_cor(items_list=json_data["films"], session=session, name="title")
+            species = await get_cor(items_list=json_data["species"], session=session, name="name")
+            starships = await get_cor(items_list=json_data["starships"], session=session, name="name")
+            vehicles = await get_cor(items_list=json_data["vehicles"], session=session, name="name")
 
     print(f'end {people_id}')
     return {"status": status,
@@ -73,9 +54,18 @@ async def get_json_from_link(link: str, session: ClientSession, name: str):
     return json_data[name]
 
 
+async def get_cor(items_list: list, session: ClientSession, name: str):
+    cor = []
+    for link in items_list:
+        items_json = get_json_from_link(link, session, name=name)
+        cor.append(items_json)
+    result = await asyncio.gather(*cor)
+    return result
+
+
 async def get_people():
     async with ClientSession() as session:
-        for chunk in chunked(range(1, 83), CHUNK_SIZE):
+        for chunk in chunked(range(1, 85), CHUNK_SIZE):
             coroutines = [get_person(people_id=i, session=session) for i in chunk]
             results = await asyncio.gather(*coroutines)
             for item in results:
@@ -117,6 +107,7 @@ async def main():
     tasks = set(asyncio.all_tasks()) - {asyncio.current_task()}
     for task in tasks:
         await task
+
 
 start = datetime.datetime.now()
 asyncio.run(main())
